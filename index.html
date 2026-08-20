@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>메인트 편집기</title>
+<style>
+  /* 갈무리(Galmuri11) · © 2019–2025 Lee Minseo · SIL OFL 1.1 */
+  @import url('https://cdn.jsdelivr.net/npm/galmuri/dist/galmuri.css');
+  /* 모나(Mona12) · © 2025 Monad ABXY · SIL OFL 1.1 */
+  @import url('https://cdn.jsdelivr.net/gh/MonadABXY/mona-font/web/mona.css');
+  :root {
+    --blue: #2f6be6;
+    --ink: #1c1c1e;
+    --gray: #8e8e93;
+    --lightgray: #c7c7cc;
+    --slot-bg: #d9d9dc;
+    --frame-bg: #eceef1;
+    --page-bg: #26282a;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: var(--page-bg);
+    font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Malgun Gothic', sans-serif;
+    color: var(--ink);
+    padding-bottom: 120px;
+  }
+
+  /* ── 배경 스테이지 ──────────────────────── */
+  .stage {
+    position: relative;
+    overflow: hidden;
+    width: min(1180px, 100%);
+    margin: 0 auto;
+    padding: 56px 48px 88px;   /* 기기 그림자가 잘리지 않을 만큼의 여백 */
+    display: flex;
+    justify-content: center;
+  }
+  .bg {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    background: var(--page-bg);
+    background-size: cover;
+    background-position: center;
+  }
+  .device { position: relative; z-index: 1; }
+  .pixel { font-family: 'Galmuri11', 'DungGeunMo', 'Malgun Gothic', monospace; }
+
+  /* ── 기기 프레임 ─────────────────────────── */
+  .device {
+    background: var(--frame-bg);
+    border-radius: 22px;
+    width: min(980px, 100%);
+    padding: 10px 34px 0;
+    box-shadow: 0 20px 60px rgba(0,0,0,.45);
+  }
+  .frame-dots {
+    text-align: center;
+    color: #b8babd;
+    font-size: 18px;
+    letter-spacing: 3px;
+    line-height: 1;
+    padding: 4px 0 14px;
+    user-select: none;
+  }
+  .screen {
+    background: #fff;
+    border-radius: 18px 18px 0 0;
+    overflow: hidden;
+    box-shadow: 0 -2px 18px rgba(0,0,0,.06);
+  }
+  .navbar {
+    background: #f2f4f7;
+    padding: 16px 22px 14px;
+  }
+  .navbar .back {
+    color: var(--blue);
+    font-size: 17px;
+    cursor: text;
+  }
+  .navbar .back::before { content: '‹ '; font-size: 20px; }
+
+  .sheet { padding: 34px 44px 26px; }
+
+  /* ── 프로필 ─────────────────────────────── */
+  .profile { display: flex; gap: 28px; position: relative; }
+  .avatar-wrap { flex: 0 0 auto; text-align: center; }
+  .avatar {
+    width: 140px; height: 140px;
+    border-radius: 34px;
+    background-color: var(--blue);
+    position: relative; overflow: hidden;
+  }
+  .tiny-caption {
+    margin-top: 8px;
+    font-size: 10px;
+    color: #b5b7bb;
+  }
+  .pinfo { flex: 1; padding-top: 8px; }
+  .nameline { display: flex; align-items: baseline; gap: 8px; }
+  .name { font-size: 27px; font-weight: 800; letter-spacing: -0.5px; }
+  .handle { font-size: 13px; color: #b0b2b6; }
+  .bio { margin-top: 10px; font-size: 14px; color: #7a7d82; line-height: 1.55; }
+  .btnrow { margin-top: 14px; display: flex; align-items: center; gap: 10px; }
+  .pill {
+    display: inline-block;
+    background: var(--blue);
+    color: #fff;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 7px 16px;
+    border-radius: 999px;
+  }
+  .pillnote { font-size: 10px; color: #b5b7bb; }
+  .share { position: absolute; top: 4px; right: 0; color: var(--blue); }
+  .share svg { width: 24px; height: 24px; }
+
+  .divider { border: none; border-top: 1px solid #ececee; margin: 26px 0 0; }
+
+  /* ── 스탯 줄 ────────────────────────────── */
+  .stats { display: flex; padding: 20px 0 22px; }
+  .stat {
+    flex: 1;
+    text-align: center;
+    padding: 2px 8px;
+    border-left: 1px solid #ececee;
+    display: flex; flex-direction: column; align-items: center; gap: 7px;
+  }
+  .stat:first-child { border-left: none; }
+  .stat.wide { flex: 1.6; }
+  .stat .label { font-size: 11px; color: #a2a5aa; }
+  .stat .value {
+    font-family: 'Mona12', 'Galmuri11', 'Malgun Gothic', sans-serif;
+    font-size: 22px; font-weight: 700; letter-spacing: 1px;
+  }
+  .stat .value.blue { color: var(--blue); }
+  .stat .sub { font-size: 10px; color: #a2a5aa; }
+  .stat .value.gray { color: #9a9da2; }
+  .tags {
+    display: flex; flex-wrap: wrap; justify-content: center;
+    gap: 2px 8px;
+    font-family: 'Mona12', 'Galmuri11', 'Malgun Gothic', sans-serif;
+    font-size: 14px; font-weight: 700;
+    line-height: 1.6; letter-spacing: 1px;
+    color: #6f7276;
+  }
+  .tag {
+    cursor: pointer; user-select: none;
+    padding: 0 2px; border-radius: 3px;
+  }
+  body:not(.capturing):not(.deleting) .tag:hover { background: #eef3ff; }
+  .tag.on { color: var(--blue); }
+  .tag-add {
+    cursor: pointer; user-select: none;
+    color: #b7bac0;
+    border: 1px dashed #c9ccd2; border-radius: 4px;
+    padding: 0 6px;
+  }
+  .tag-add:hover { color: var(--blue); border-color: var(--blue); }
+  body.capturing .tag-add { display: none; }
+  .stars { display: flex; gap: 2px; cursor: pointer; user-select: none; }
+  .stars span { font-size: 15px; color: #d4d6da; transition: color .1s; }
+  .stars span.on { color: var(--blue); }
+
+  /* ── 갤러리 ─────────────────────────────── */
+  .genre-row {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 8px 0 14px;
+  }
+  .genre { font-size: 14px; font-weight: 700; }
+  /* 한 줄에 최대 4칸, 5번째부터 아랫줄로 (--cols는 JS가 개수에 맞춰 설정) */
+  .gallery {
+    display: grid;
+    grid-template-columns: repeat(var(--cols, 2), 1fr);
+    gap: 14px;
+  }
+  .shot {
+    min-width: 0;
+    container-type: inline-size;   /* 캡션 크기를 칸 너비 기준으로 계산 */
+    aspect-ratio: 390/305;
+    background-color: var(--slot-bg);
+    position: relative; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: flex-end;
+  }
+  .overlay {
+    position: relative; z-index: 2;
+    background: rgba(90,92,96,.82);
+    color: #fff;
+    text-align: center;
+    padding: clamp(5px, calc(1.5cqw + 3.5px), 10px)
+             clamp(6px, calc(1.5cqw + 4px), 12px)
+             clamp(6px, calc(1.8cqw + 4px), 12px);
+  }
+  /* 칸이 좁아지면 캡션도 완만하게 작아진다 (2열 15px → 4열 11px) */
+  .ov-title { font-size: clamp(11px, calc(1.7cqw + 8px), 15px); font-weight: 700; line-height: 1.35; }
+  .ov-tags {
+    font-size: clamp(9px, calc(1.2cqw + 7.2px), 12px);
+    margin-top: clamp(1px, .9cqw, 4px);
+    line-height: 1.4; opacity: .95;
+    word-break: keep-all;
+  }
+
+  /* ── 자유 기입란 ────────────────────────── */
+  .free-head {
+    display: flex; justify-content: space-between; align-items: baseline;
+    margin: 30px 0 14px;
+  }
+  .free-title { font-size: 20px; font-weight: 800; }
+  .seeall { font-size: 14px; color: var(--blue); }
+  .notice {
+    background: #f1f2f5;
+    border-radius: 16px;
+    padding: 20px 22px 40px;
+  }
+  .notice-top { display: flex; justify-content: space-between; align-items: flex-start; }
+  .attn { color: var(--blue); font-size: 16px; font-weight: 700; letter-spacing: 1px; }
+  .ntime { text-align: right; font-size: 12px; color: #9a9da2; line-height: 1.6; }
+  .nbody { margin-top: 14px; font-size: 14px; color: #4a4c50; line-height: 1.7; min-height: 3em; }
+  .credit { text-align: right; font-size: 11px; color: #b5b7bb; margin-top: 10px; padding-bottom: 6px; }
+
+  /* ── 편집 UX ────────────────────────────── */
+  [contenteditable] { outline: none; border-radius: 4px; }
+  body:not(.capturing) [contenteditable]:hover { box-shadow: 0 0 0 1px #bcd0ff; }
+  /* 포커스 표시는 테두리만 — 배경을 칠하면 흰 글씨(캡션 등)가 안 보임 */
+  body:not(.capturing) [contenteditable]:focus {
+    box-shadow: 0 0 0 2px var(--blue);
+    background: rgba(47,107,230,.07);
+  }
+  body:not(.capturing) .overlay [contenteditable]:focus { background: rgba(0,0,0,.35); }
+  .img-slot { cursor: pointer; }
+  .img-slot.has-img { cursor: grab; }
+  .img-slot.has-img:active { cursor: grabbing; }
+  body:not(.capturing) .img-slot:not(.has-img):hover { filter: brightness(.96); }
+  /* 위치·크기는 JS가 픽셀로 직접 계산해 넣는다 (transform을 쓰면 PNG 캡처에서 늘어남) */
+  .slot-img {
+    position: absolute; top: 0; left: 0;
+    max-width: none; max-height: none;
+    pointer-events: none;
+    user-select: none;
+  }
+  .img-tools {
+    position: absolute; top: 8px; left: 50%;
+    transform: translateX(-50%);
+    display: none; gap: 4px; z-index: 6;
+  }
+  .avatar .img-tools { top: auto; bottom: 6px; }
+  .img-slot.has-img:hover .img-tools { display: flex; }
+  body.capturing .img-tools,
+  body.deleting .img-tools { display: none !important; }
+  .img-tools button {
+    background: rgba(0,0,0,.6); color: #fff;
+    border: none; border-radius: 6px;
+    height: 24px; min-width: 24px; padding: 0 6px;
+    font-size: 11px; line-height: 1;
+    white-space: nowrap;          /* 좁은 칸에서 글자가 세로로 쪼개지지 않게 */
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; font-family: inherit;
+  }
+  .img-tools button:hover { background: rgba(0,0,0,.8); }
+  .img-clear {
+    position: absolute; top: 8px; right: 8px;
+    width: 24px; height: 24px; border-radius: 50%;
+    background: rgba(0,0,0,.55); color: #fff;
+    border: none; font-size: 13px; line-height: 1; cursor: pointer;
+    display: none; z-index: 5;
+  }
+  .img-slot.has-img:hover .img-clear { display: block; }
+  body.capturing .img-clear { display: none !important; }
+  .ov-toggle {
+    position: absolute; top: 8px; left: 8px;
+    height: 24px; padding: 0 9px; border-radius: 6px;
+    background: rgba(0,0,0,.55); color: #fff;
+    border: none; font-size: 11px; font-family: inherit;
+    line-height: 1; cursor: pointer; white-space: nowrap;
+    display: none; z-index: 5;
+  }
+  .shot:hover .ov-toggle { display: block; }
+  body.capturing .ov-toggle,
+  body.deleting .ov-toggle { display: none !important; }
+  .avatar-wrap { position: relative; }
+
+  /* ── 요소 지우기 모드 ───────────────────── */
+  .removed { display: none !important; }
+  .overlay.ov-off { display: none !important; }
+  body.deleting .stage { cursor: crosshair; }
+  body.deleting .stage .overlay:hover,
+  body.deleting .stage .stat:hover,
+  body.deleting .stage .shot:hover,
+  body.deleting .stage .notice:hover,
+  body.deleting .stage .free-head:hover,
+  body.deleting .stage .genre-row:hover,
+  body.deleting .stage .btnrow:hover,
+  body.deleting .stage .bio:hover,
+  body.deleting .stage .tiny-caption:hover,
+  body.deleting .stage .stars:hover,
+  body.deleting .stage .sub:hover,
+  body.deleting .stage .handle:hover,
+  body.deleting .stage .ntime:hover,
+  body.deleting .stage .frame-dots:hover,
+  body.deleting .stage .tag:hover {
+    outline: 2px solid #e5484d;
+    outline-offset: -2px;
+  }
+  body.deleting .stage [contenteditable]:hover,
+  body.deleting .stage [contenteditable]:focus { box-shadow: none; background: none; }
+
+  /* ── 툴바 (플로팅 패널) ─────────────────── */
+  .toolbar {
+    position: fixed; right: 18px; bottom: 18px;
+    width: 252px;
+    max-height: calc(100vh - 36px);
+    display: flex; flex-direction: column;
+    background: rgba(22, 23, 26, .93);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255,255,255,.09);
+    border-radius: 14px;
+    box-shadow: 0 12px 38px rgba(0,0,0,.55);
+    overflow: hidden;
+    z-index: 100;
+  }
+  .tb-head {
+    display: flex; justify-content: space-between; align-items: center;
+    cursor: pointer; user-select: none;
+    padding: 11px 14px;
+    color: #fff; font-size: 13px; font-weight: 700;
+    border-bottom: 1px solid rgba(255,255,255,.07);
+    flex: 0 0 auto;
+  }
+  #tb-toggle {
+    background: none; border: none; color: #9a9da2;
+    font-size: 15px; line-height: 1; padding: 2px 6px;
+    cursor: pointer; font-family: inherit;
+  }
+  #tb-toggle:hover { color: #fff; }
+  .toolbar.collapsed { width: auto; }
+  .toolbar.collapsed .tb-head { border-bottom: none; gap: 14px; }
+  .toolbar.collapsed .tb-body { display: none; }
+  .tb-body {
+    padding: 13px 14px 15px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 17px;
+  }
+  .tb-section { display: flex; flex-direction: column; gap: 8px; }
+  .tb-title {
+    font-size: 10.5px; letter-spacing: 1.5px;
+    color: #7d8085; font-weight: 700;
+  }
+  .hint { color: #c9cbd0; font-size: 11.5px; line-height: 1.75; }
+  .btn-col { display: flex; flex-direction: column; gap: 6px; }
+  .toolbar button:not(#tb-toggle) {
+    width: 100%;
+    background: #33363b; color: #ececee;
+    border: none; border-radius: 8px;
+    font-size: 12.5px; font-weight: 600;
+    padding: 9px 12px;
+    cursor: pointer; font-family: inherit;
+  }
+  .toolbar button:not(#tb-toggle):hover { filter: brightness(1.18); }
+  .toolbar button.primary { background: var(--blue); color: #fff; }
+  .toolbar button.danger { background: #c93b40; color: #fff; }
+  .scale-row {
+    display: flex; align-items: center; justify-content: space-between;
+    color: #c9cbd0; font-size: 12px; gap: 8px;
+  }
+  .scale-row select {
+    background: #33363b; color: #ececee;
+    border: none; border-radius: 6px;
+    padding: 5px 8px; font-size: 12px; font-family: inherit;
+    cursor: pointer;
+  }
+  .toolbar .panel {
+    background: #202226;
+    border-radius: 10px;
+    padding: 10px 12px;
+    display: flex; flex-direction: column; gap: 8px;
+  }
+  .toolbar .panel label {
+    color: #c9cbd0; font-size: 12px;
+    display: flex; align-items: center; justify-content: space-between; gap: 10px;
+  }
+  .toolbar .panel input[type="range"] { width: 128px; }
+  .toolbar .panel input[type="color"] {
+    width: 34px; height: 24px; border: none; padding: 0;
+    background: none; cursor: pointer;
+  }
+  body.capturing .toolbar { display: none; }
+</style>
+</head>
+<body>
+
+<div class="stage" id="capture">
+<div class="bg" id="bg"></div>
+<div class="device">
+  <div class="frame-dots">•••</div>
+  <div class="screen">
+    <div class="navbar"><span class="back" contenteditable spellcheck="false">뒤로</span></div>
+    <div class="sheet">
+
+      <div class="profile">
+        <div class="avatar-wrap">
+          <div class="avatar img-slot"><button class="img-clear" title="이미지 지우기">✕</button></div>
+          <div class="tiny-caption" contenteditable spellcheck="false">캡션이라면 여기에 기입</div>
+        </div>
+        <div class="pinfo">
+          <div class="nameline">
+            <span class="name" contenteditable spellcheck="false">닉네임</span>
+            <span class="handle" contenteditable spellcheck="false">@계정</span>
+          </div>
+          <div class="bio" contenteditable spellcheck="false">소개하고 싶은 자신을 써주세요<br>원작자표기만 삭제안하신다면 원하는대로 커스텀해서 사용해도 ok!</div>
+          <div class="btnrow">
+            <span class="pill" contenteditable spellcheck="false">계정에 대하여</span>
+            <span class="pillnote" contenteditable spellcheck="false">하단 참고</span>
+          </div>
+        </div>
+        <div class="share">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 15V3"/><path d="M8 7l4-4 4 4"/><path d="M5 11v8a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-8"/>
+          </svg>
+        </div>
+      </div>
+
+      <hr class="divider">
+
+      <div class="stats">
+        <div class="stat">
+          <div class="label" contenteditable spellcheck="false">접속률</div>
+          <div class="value blue" contenteditable spellcheck="false">낮음</div>
+          <div class="stars" data-rating="2" title="클릭해서 별점 변경"></div>
+        </div>
+        <div class="stat">
+          <div class="label" contenteditable spellcheck="false">연령</div>
+          <div class="value" contenteditable spellcheck="false">연령</div>
+          <div class="sub" contenteditable spellcheck="false">원하는대로</div>
+        </div>
+        <div class="stat">
+          <div class="label" contenteditable spellcheck="false">계정성향</div>
+          <div class="value blue" contenteditable spellcheck="false">과몰입</div>
+          <div class="sub" contenteditable spellcheck="false">진한 드림러</div>
+        </div>
+        <div class="stat">
+          <div class="label" contenteditable spellcheck="false">전공분야</div>
+          <div class="value pixel" contenteditable spellcheck="false">글/그림</div>
+          <div class="sub" contenteditable spellcheck="false">초이입게임스포일러</div>
+        </div>
+        <div class="stat">
+          <div class="label" contenteditable spellcheck="false">이별시</div>
+          <div class="value pixel gray" contenteditable spellcheck="false">블언블</div>
+          <div class="sub" contenteditable spellcheck="false">트정악의X</div>
+        </div>
+        <div class="stat wide">
+          <div class="label" contenteditable spellcheck="false">트윗성향</div>
+          <div class="tags pixel">
+            <span class="tag">RT</span>
+            <span class="tag">마음</span>
+            <span class="tag">탐라대화</span>
+            <span class="tag">맨션</span>
+            <span class="tag">인용</span>
+            <span class="tag">일상트</span>
+            <span class="tag">욕트</span>
+            <span class="tag">섹트</span>
+            <span class="tag">우울트</span>
+            <span class="tag">썰</span>
+            <span class="tag">앓이</span>
+            <span class="tag">기타</span>
+            <span class="tag-add" title="태그 추가">＋</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="genre-row">
+        <div class="genre" contenteditable spellcheck="false">장르명이나, 자캐, 드림커플 소개도 OK!</div>
+        <div class="tiny-caption" contenteditable spellcheck="false">캡션이라면 여기에 기입</div>
+      </div>
+
+      <div class="gallery">
+        <div class="shot img-slot">
+          <button class="img-clear" title="이미지 지우기">✕</button>
+          <button class="ov-toggle" title="캡션 바 표시/숨김">캡션</button>
+          <div class="overlay">
+            <div class="ov-title" contenteditable spellcheck="false">커플 X 이름</div>
+            <div class="ov-tags" contenteditable spellcheck="false">#캐에대해 #주절거리도 #좋고 #안써도 #좋아</div>
+          </div>
+        </div>
+        <div class="shot img-slot">
+          <button class="img-clear" title="이미지 지우기">✕</button>
+          <button class="ov-toggle" title="캡션 바 표시/숨김">캡션</button>
+          <div class="overlay ov-off">
+            <div class="ov-title" contenteditable spellcheck="false">제목</div>
+            <div class="ov-tags" contenteditable spellcheck="false">#해시태그</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="free-head">
+        <div class="free-title" contenteditable spellcheck="false">자유 기입란</div>
+        <div class="seeall" contenteditable spellcheck="false">모두 보기</div>
+      </div>
+
+      <div class="notice">
+        <div class="notice-top">
+          <div class="attn pixel" contenteditable spellcheck="false">▲ ATTENTION!</div>
+          <div class="ntime" contenteditable spellcheck="false">25분전<br>팔로하기전에 읽어주세요</div>
+        </div>
+        <div class="nbody" contenteditable spellcheck="false">타이틀, 시간 모두 수정 가능합니다 :)</div>
+      </div>
+
+      <div class="credit">@gimyunseul92364</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<div class="toolbar collapsed" id="toolbar">
+  <div class="tb-head" id="tb-head">
+    <span>🛠 편집 도구</span>
+    <button id="tb-toggle" title="열기/접기">▾</button>
+  </div>
+  <div class="tb-body">
+    <div class="tb-section">
+      <div class="tb-title">사용법</div>
+      <div class="hint">
+        ✏️ 글자는 클릭해서 바로 수정<br>
+        🖼 파란 아바타·회색 박스는 클릭해서 이미지 업로드<br>
+        ✋ 올린 사진은 드래그로 위치 이동, 휠·＋−버튼으로 확대/축소<br>
+        ⭐ 별점은 클릭으로 조절<br>
+        🏷 트윗성향 태그는 클릭하면 파랗게 선택돼요 (다시 누르면 해제, ＋로 태그 추가)<br>
+        🐦 트위터에 올릴 거면 화질을 「트위터용」으로 — 더 키우면 트위터가 줄이면서 다시 압축해 오히려 뭉개져요<br>
+        💾 「HTML로 저장」한 파일은 「저장본 불러와서 이어 편집」으로 다시 열 수 있어요<br>
+        🙏 다른 건 마음껏 바꾸셔도 되지만, 하단의 출처 표기만은 지우지 말아주세요
+      </div>
+    </div>
+
+    <div class="tb-section">
+      <div class="tb-title">배경</div>
+      <div class="btn-col">
+        <button id="btn-bgimg">이미지 업로드 (자동 흐림)</button>
+        <button id="btn-bggrad">그라데이션</button>
+        <button id="btn-bgreset">초기화</button>
+      </div>
+      <div class="panel" id="blur-panel" hidden>
+        <label>흐림 정도 <input type="range" id="blur-amount" min="0" max="50" value="24"></label>
+        <label>어둡게 <input type="range" id="dim-amount" min="0" max="70" value="20"></label>
+      </div>
+      <div class="panel" id="grad-panel" hidden>
+        <label>색 1 <input type="color" id="grad-c1" value="#26282a"></label>
+        <label>색 2 <input type="color" id="grad-c2" value="#51565e"></label>
+        <label>각도 <input type="range" id="grad-angle" min="0" max="360" value="160"></label>
+      </div>
+    </div>
+
+    <div class="tb-section">
+      <div class="tb-title">요소</div>
+      <div class="btn-col">
+        <button id="btn-del">요소 지우기 모드</button>
+        <button id="btn-restore">지운 요소 모두 복원</button>
+        <button id="btn-add-stat">스탯 칸 추가</button>
+        <button id="btn-add-shot">이미지 칸 추가</button>
+      </div>
+      <div class="hint" id="del-hint" hidden>
+        빨간 테두리가 뜨는 부분을 클릭하면 숨겨져요.<br>
+        다 정리했으면 모드를 다시 눌러 꺼주세요.
+      </div>
+    </div>
+
+    <div class="tb-section">
+      <div class="tb-title">내보내기</div>
+      <div class="btn-col">
+        <label class="scale-row">화질
+          <select id="png-scale">
+            <option value="tw" selected>트위터용 (권장)</option>
+            <option value="2">2배</option>
+            <option value="3">3배</option>
+            <option value="4">4배</option>
+            <option value="5">5배</option>
+            <option value="6">6배 (최고)</option>
+          </select>
+        </label>
+        <button id="btn-png" class="primary">PNG로 저장</button>
+        <button id="btn-html">HTML로 저장 (수정본 보관)</button>
+        <button id="btn-load">저장본 불러와서 이어 편집</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<input type="file" id="filepick" accept="image/*" hidden>
+<input type="file" id="bgpick" accept="image/*" hidden>
+<input type="file" id="htmlpick" accept=".html,text/html" hidden>
+
+<script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+<script>
+(function () {
+  /* ── 별점 ──
+     클릭 처리는 문서 전체에 위임한다. 저장본을 불러와 내용이 통째로 바뀌어도
+     다시 연결할 필요가 없다. */
+  function renderStars(box) {
+    var r = parseInt(box.dataset.rating || '0', 10);
+    box.innerHTML = '';
+    for (var i = 1; i <= 5; i++) {
+      var s = document.createElement('span');
+      s.textContent = '★';
+      if (i <= r) s.classList.add('on');
+      box.appendChild(s);
+    }
+  }
+
+  document.addEventListener('click', function (e) {
+    if (document.body.classList.contains('deleting')) return;
+    var star = e.target.closest ? e.target.closest('.stars span') : null;
+    if (!star) return;
+    var box = star.parentElement;
+    var n = Array.prototype.indexOf.call(box.children, star) + 1;
+    var cur = parseInt(box.dataset.rating || '0', 10);
+    box.dataset.rating = String(cur === n ? n - 1 : n);
+    renderStars(box);
+  });
+
+  /* ── 이미지 업로드 + 확대/이동 편집 ── */
+  var picker = document.getElementById('filepick');
+  var targetSlot = null;
+
+  /* 사진이 칸을 꽉 채우도록 크기를 맞추고, 빈 공간이 생기지 않는 범위로 이동을 제한 */
+  function applyTf(im) {
+    var slot = im.parentElement;
+    if (!slot) return;
+    var W = slot.clientWidth, H = slot.clientHeight;
+    var nw = im.naturalWidth, nh = im.naturalHeight;
+    if (!nw || !nh || !W || !H) return;
+
+    var cover = Math.max(W / nw, H / nh);      // 칸을 덮는 최소 배율
+    var s = Math.max(1, parseFloat(im.dataset.s || '1'));
+    var rw = nw * cover * s, rh = nh * cover * s;   // 실제로 그려질 크기
+
+    var maxX = Math.max(0, (rw - W) / 2);      // 좌우로 남는 여유분
+    var maxY = Math.max(0, (rh - H) / 2);
+    var x = Math.max(-maxX, Math.min(maxX, parseFloat(im.dataset.x || '0')));
+    var y = Math.max(-maxY, Math.min(maxY, parseFloat(im.dataset.y || '0')));
+
+    im.dataset.x = x; im.dataset.y = y; im.dataset.s = s;
+    im.style.width = rw + 'px';
+    im.style.height = rh + 'px';
+    im.style.left = ((W - rw) / 2 + x) + 'px';
+    im.style.top = ((H - rh) / 2 + y) + 'px';
+  }
+
+  /* 이미지 로드 완료 후에야 원본 크기를 알 수 있으므로 그때 다시 계산 */
+  function watchImg(im) {
+    if (im.complete && im.naturalWidth) applyTf(im);
+    im.addEventListener('load', function () { applyTf(im); });
+  }
+
+  /* 창 크기가 바뀌면 칸 크기도 달라지므로 전부 다시 맞춘다 */
+  window.addEventListener('resize', function () {
+    document.querySelectorAll('.slot-img').forEach(applyTf);
+  });
+
+  /* 연결 여부는 DOM이 아니라 메모리에 기록한다.
+     dataset에 남기면 저장본에 함께 저장돼, 불러온 뒤 다시 연결되지 않는다. */
+  var boundSlots = new WeakSet();
+
+  function bindSlot(slot) {
+    if (boundSlots.has(slot)) return;
+    boundSlots.add(slot);
+
+    /* 사진 조작 버튼 바 (사진 변경 / 축소 / 확대 / 원위치) */
+    if (!slot.querySelector('.img-tools')) {
+      var bar = document.createElement('div');
+      bar.className = 'img-tools';
+      bar.innerHTML =
+        '<button data-act="change" title="사진 변경">🖼</button>' +
+        '<button data-act="minus" title="축소">−</button>' +
+        '<button data-act="plus" title="확대">＋</button>' +
+        '<button data-act="reset" title="원위치">↺</button>';
+      slot.appendChild(bar);
+    }
+
+    slot.addEventListener('click', function (e) {
+      if (e.target.closest('[contenteditable]')) return;      // 텍스트 편집 클릭은 통과
+      var im = slot.querySelector('.slot-img');
+
+      var act = e.target.dataset ? e.target.dataset.act : null;
+      if (act) {                                               // 조작 버튼
+        e.stopPropagation();
+        if (act === 'change') {
+          targetSlot = slot;
+          picker.value = '';
+          picker.click();
+          return;
+        }
+        if (!im) return;
+        var s = parseFloat(im.dataset.s || '1');
+        if (act === 'plus') s = Math.min(5, s * 1.15);
+        if (act === 'minus') s = Math.max(1, s / 1.15);
+        if (act === 'reset') { im.dataset.x = 0; im.dataset.y = 0; s = 1; }
+        im.dataset.s = s;
+        applyTf(im);
+        return;
+      }
+
+      if (e.target.classList.contains('ov-toggle')) {          // 캡션 바 표시/숨김
+        var ov = slot.querySelector('.overlay');
+        if (!ov) {
+          ov = document.createElement('div');
+          ov.className = 'overlay';
+          ov.innerHTML =
+            '<div class="ov-title" contenteditable spellcheck="false">제목</div>' +
+            '<div class="ov-tags" contenteditable spellcheck="false">#해시태그</div>';
+          slot.appendChild(ov);
+        } else if (ov.classList.contains('ov-off') || ov.classList.contains('removed')) {
+          ov.classList.remove('ov-off');
+          ov.classList.remove('removed');
+        } else {
+          ov.classList.add('ov-off');
+        }
+        e.stopPropagation();
+        return;
+      }
+
+      if (e.target.classList.contains('img-clear')) {          // ✕ = 이미지 제거
+        if (im) im.remove();
+        slot.classList.remove('has-img');
+        e.stopPropagation();
+        return;
+      }
+
+      if (!im) {                                               // 빈 칸만 클릭 시 바로 업로드
+        targetSlot = slot;
+        picker.value = '';
+        picker.click();
+      }
+    });
+
+    /* 드래그로 사진 위치 이동 */
+    slot.addEventListener('mousedown', function (e) {
+      if (document.body.classList.contains('deleting')) return;
+      if (e.target.closest('button') || e.target.closest('[contenteditable]')) return;
+      var im = slot.querySelector('.slot-img');
+      if (!im) return;
+      e.preventDefault();
+      var sx = e.clientX, sy = e.clientY;
+      var ox = parseFloat(im.dataset.x || '0'), oy = parseFloat(im.dataset.y || '0');
+      function mv(ev) {
+        im.dataset.x = ox + (ev.clientX - sx);
+        im.dataset.y = oy + (ev.clientY - sy);
+        applyTf(im);
+      }
+      function up() {
+        document.removeEventListener('mousemove', mv);
+        document.removeEventListener('mouseup', up);
+      }
+      document.addEventListener('mousemove', mv);
+      document.addEventListener('mouseup', up);
+    });
+
+    /* 휠로 확대/축소 */
+    slot.addEventListener('wheel', function (e) {
+      if (document.body.classList.contains('deleting')) return;
+      var im = slot.querySelector('.slot-img');
+      if (!im) return;
+      e.preventDefault();
+      var s = parseFloat(im.dataset.s || '1');
+      s = e.deltaY < 0 ? Math.min(5, s * 1.08) : Math.max(1, s / 1.08);
+      im.dataset.s = s;
+      applyTf(im);
+    }, { passive: false });
+  }
+  picker.addEventListener('change', function () {
+    if (!picker.files || !picker.files[0] || !targetSlot) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      var im = targetSlot.querySelector('.slot-img');
+      if (!im) {
+        im = document.createElement('img');
+        im.className = 'slot-img';
+        im.alt = '';
+        targetSlot.insertBefore(im, targetSlot.firstChild);
+        watchImg(im);
+      }
+      im.dataset.x = 0; im.dataset.y = 0; im.dataset.s = 1;
+      im.src = fr.result;
+      applyTf(im);
+      targetSlot.classList.add('has-img');
+    };
+    fr.readAsDataURL(picker.files[0]);
+  });
+
+  /* 화면 내용이 새로 들어올 때마다(최초 로드·저장본 불러오기) 기능을 연결한다 */
+  function initStage() {
+    /* 예전 버전으로 저장된 파일에 남아 있을 수 있는 흔적 제거 */
+    document.querySelectorAll('[data-bound]').forEach(function (el) { delete el.dataset.bound; });
+    document.querySelectorAll('.stars').forEach(renderStars);
+    document.querySelectorAll('.img-slot').forEach(function (slot) {
+      bindSlot(slot);
+      var im = slot.querySelector('.slot-img');
+      if (im) {
+        slot.classList.add('has-img');
+        watchImg(im);
+      }
+    });
+    updateGalleryCols();
+  }
+
+  /* ── 툴바 열기/접기 ── */
+  var toolbar = document.getElementById('toolbar');
+  document.getElementById('tb-head').addEventListener('click', function () {
+    toolbar.classList.toggle('collapsed');
+    document.getElementById('tb-toggle').textContent =
+      toolbar.classList.contains('collapsed') ? '▾' : '▴';
+  });
+
+  /* ── 트윗성향 태그: 클릭 선택 / ＋로 추가 (문서 위임) ── */
+  document.addEventListener('click', function (e) {
+    if (document.body.classList.contains('deleting')) return;  // 지우기 모드는 삭제 핸들러가 처리
+    if (!e.target.closest) return;
+    var add = e.target.closest('.tag-add');
+    if (add) {
+      var name = prompt('추가할 태그를 입력하세요');
+      if (name && name.trim()) {
+        var s = document.createElement('span');
+        s.className = 'tag';
+        s.textContent = name.trim();
+        add.parentElement.insertBefore(s, add);
+      }
+      return;
+    }
+    var t = e.target.closest('.tag');
+    if (t) t.classList.toggle('on');
+  });
+
+  /* ── 칸 추가 ── */
+  document.getElementById('btn-add-stat').addEventListener('click', function () {
+    var d = document.createElement('div');
+    d.className = 'stat';
+    d.innerHTML =
+      '<div class="label" contenteditable spellcheck="false">항목</div>' +
+      '<div class="value blue" contenteditable spellcheck="false">내용</div>' +
+      '<div class="sub" contenteditable spellcheck="false">설명</div>';
+    document.querySelector('.stats').appendChild(d);
+  });
+
+  /* 이미지 칸 개수에 맞춰 열 수 조정 (최대 4열, 그 이상은 아랫줄로) */
+  function updateGalleryCols() {
+    var g = document.querySelector('.gallery');
+    if (!g) return;
+    var n = g.querySelectorAll('.shot:not(.removed)').length;
+    g.style.setProperty('--cols', Math.min(Math.max(n, 1), 4));
+  }
+
+  document.getElementById('btn-add-shot').addEventListener('click', function () {
+    var d = document.createElement('div');
+    d.className = 'shot img-slot';
+    d.innerHTML =
+      '<button class="img-clear" title="이미지 지우기">✕</button>' +
+      '<button class="ov-toggle" title="캡션 바 표시/숨김">캡션</button>' +
+      '<div class="overlay">' +
+      '<div class="ov-title" contenteditable spellcheck="false">제목</div>' +
+      '<div class="ov-tags" contenteditable spellcheck="false">#해시태그</div>' +
+      '</div>';
+    document.querySelector('.gallery').appendChild(d);
+    bindSlot(d);
+    updateGalleryCols();
+  });
+
+  /* ── 요소 지우기 모드 ── */
+  var DELETABLE = ['.tag', '.overlay', '.stat', '.shot', '.notice', '.free-head', '.genre-row',
+    '.btnrow', '.bio', '.tiny-caption', '.stars', '.sub',
+    '.handle', '.ntime', '.frame-dots'];
+  var delBtn = document.getElementById('btn-del');
+  var delHint = document.getElementById('del-hint');
+
+  delBtn.addEventListener('click', function () {
+    var on = document.body.classList.toggle('deleting');
+    delBtn.classList.toggle('danger', on);
+    delBtn.textContent = on ? '지우기 모드 끄기' : '요소 지우기 모드';
+    delHint.hidden = !on;
+  });
+
+  /* 지우기 모드에서는 텍스트 편집 포커스가 생기지 않게 */
+  document.addEventListener('mousedown', function (e) {
+    if (!document.body.classList.contains('deleting')) return;
+    if (e.target.closest('.toolbar')) return;
+    e.preventDefault();
+  }, true);
+
+  /* 클릭한 지점에서 가장 안쪽의 지울 수 있는 요소를 숨김 */
+  document.addEventListener('click', function (e) {
+    if (!document.body.classList.contains('deleting')) return;
+    if (e.target.closest('.toolbar')) return;
+    e.preventDefault();
+    e.stopPropagation();
+    var el = e.target.closest(DELETABLE.join(','));
+    if (el && el.closest('.stage')) {
+      el.classList.add('removed');
+      updateGalleryCols();
+    }
+  }, true);
+
+  document.getElementById('btn-restore').addEventListener('click', function () {
+    document.querySelectorAll('.removed').forEach(function (el) {
+      el.classList.remove('removed');
+    });
+    updateGalleryCols();
+  });
+
+  /* ── 배경 설정 ── */
+  var bg = document.getElementById('bg');
+  var bgPicker = document.getElementById('bgpick');
+  var blurPanel = document.getElementById('blur-panel');
+  var gradPanel = document.getElementById('grad-panel');
+
+  /* 배경 이미지: 원본을 dataset에 보관하고, 캔버스로 미리 블러 처리해서 적용
+     (CSS filter 대신 픽셀을 직접 흐리기 때문에 PNG 저장에도 그대로 반영됨) */
+  document.getElementById('btn-bgimg').addEventListener('click', function () {
+    bgPicker.value = '';
+    bgPicker.click();
+  });
+
+  bgPicker.addEventListener('change', function () {
+    if (!bgPicker.files || !bgPicker.files[0]) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      bg.dataset.orig = fr.result;
+      gradPanel.hidden = true;
+      blurPanel.hidden = false;
+      applyBlurredBg();
+    };
+    fr.readAsDataURL(bgPicker.files[0]);
+  });
+
+  function applyBlurredBg() {
+    var orig = bg.dataset.orig;
+    if (!orig) return;
+    var blurPx = parseInt(document.getElementById('blur-amount').value, 10);
+    var dim = parseInt(document.getElementById('dim-amount').value, 10) / 100;
+    var img = new Image();
+    img.onload = function () {
+      var maxW = 1600;
+      var scale = Math.min(1, maxW / img.width);
+      var w = Math.max(1, Math.round(img.width * scale));
+      var h = Math.max(1, Math.round(img.height * scale));
+      var c = document.createElement('canvas');
+      c.width = w; c.height = h;
+      var ctx = c.getContext('2d');
+      var pad = blurPx * 2;                       // 가장자리 투명해지는 것 방지용 확대
+      ctx.filter = blurPx > 0 ? 'blur(' + blurPx + 'px)' : 'none';
+      ctx.drawImage(img, -pad, -pad, w + pad * 2, h + pad * 2);
+      ctx.filter = 'none';
+      if (dim > 0) {
+        ctx.fillStyle = 'rgba(0,0,0,' + dim + ')';
+        ctx.fillRect(0, 0, w, h);
+      }
+      bg.style.background = '';
+      bg.style.backgroundImage = 'url("' + c.toDataURL('image/jpeg', 0.85) + '")';
+      bg.style.backgroundSize = 'cover';
+      bg.style.backgroundPosition = 'center';
+    };
+    img.src = orig;
+  }
+  document.getElementById('blur-amount').addEventListener('change', applyBlurredBg);
+  document.getElementById('dim-amount').addEventListener('change', applyBlurredBg);
+
+  /* 배경 그라데이션 */
+  function applyGrad() {
+    var c1 = document.getElementById('grad-c1').value;
+    var c2 = document.getElementById('grad-c2').value;
+    var ang = document.getElementById('grad-angle').value;
+    bg.style.backgroundImage = 'linear-gradient(' + ang + 'deg, ' + c1 + ', ' + c2 + ')';
+    bg.style.backgroundSize = '';
+    bg.style.backgroundPosition = '';
+  }
+  document.getElementById('btn-bggrad').addEventListener('click', function () {
+    blurPanel.hidden = true;
+    gradPanel.hidden = !gradPanel.hidden;
+    if (!gradPanel.hidden) applyGrad();
+  });
+  ['grad-c1', 'grad-c2', 'grad-angle'].forEach(function (id) {
+    document.getElementById(id).addEventListener('input', applyGrad);
+  });
+
+  /* 배경 초기화 */
+  document.getElementById('btn-bgreset').addEventListener('click', function () {
+    bg.style.background = '';
+    bg.style.backgroundImage = '';
+    delete bg.dataset.orig;
+    blurPanel.hidden = true;
+    gradPanel.hidden = true;
+  });
+
+  /* 저장된 파일을 다시 열었을 때: 배경 이미지가 있으면 흐림 패널 다시 노출 */
+  if (bg.dataset.orig) blurPanel.hidden = false;
+
+  /* ── PNG 저장 ── */
+  document.getElementById('btn-png').addEventListener('click', function () {
+    if (typeof html2canvas === 'undefined') {
+      alert('PNG 저장에는 인터넷 연결이 필요해요. (html2canvas 로딩 실패)\n오프라인이라면 브라우저 캡처 기능을 이용해주세요.');
+      return;
+    }
+    /* html2canvas는 box-shadow를 그리지 못하므로 배경과 기기를 따로 찍은 뒤
+       캔버스에서 그림자를 직접 그려 합성한다 */
+    var stage = document.getElementById('capture');
+    var device = stage.querySelector('.device');
+    var bgEl = document.getElementById('bg');
+    var sel = document.getElementById('png-scale').value;
+    var sr0 = stage.getBoundingClientRect();
+
+    /* 트위터는 긴 변 4096px가 상한이고, 그걸 넘으면 축소하면서 JPEG로 다시 압축한다.
+       그래서 글자 많은 카드는 확대했을 때 뭉개져 보인다. 한도에 딱 맞춰 뽑는다. */
+    var TWITTER_MAX = 4096;
+    var want = sel === 'tw'
+      ? TWITTER_MAX / Math.max(sr0.width, sr0.height)
+      : (parseInt(sel, 10) || 3);
+
+    /* 브라우저 캔버스 한계(한 변 16384px, 전체 약 2.6억 픽셀)도 넘지 않게 */
+    var K = Math.max(1, Math.min(want,
+      16000 / sr0.width, 16000 / sr0.height,
+      Math.sqrt(2.4e8 / (sr0.width * sr0.height))));
+    K = Math.floor(K * 10) / 10;
+    var opt = { scale: K, backgroundColor: null, useCORS: true };
+
+    document.body.classList.add('capturing');
+    Promise.all([html2canvas(bgEl, opt), html2canvas(device, opt)])
+      .then(function (parts) {
+        document.body.classList.remove('capturing');
+        var sr = stage.getBoundingClientRect(), dr = device.getBoundingClientRect();
+        var out = document.createElement('canvas');
+        out.width = Math.round(sr.width * K);
+        out.height = Math.round(sr.height * K);
+        var ctx = out.getContext('2d');
+
+        ctx.drawImage(parts[0], 0, 0, out.width, out.height);   // 배경
+        ctx.save();
+        ctx.shadowColor = 'rgba(0,0,0,.45)';                     // 기기 그림자
+        ctx.shadowBlur = 60 * K;
+        ctx.shadowOffsetY = 20 * K;
+        ctx.drawImage(parts[1],
+          Math.round((dr.left - sr.left) * K),
+          Math.round((dr.top - sr.top) * K));
+        ctx.restore();
+
+        out.toBlob(function (blob) {
+          var a = document.createElement('a');
+          a.download = 'profile.png';
+          a.href = URL.createObjectURL(blob);
+          a.click();
+          setTimeout(function () { URL.revokeObjectURL(a.href); }, 10000);
+        }, 'image/png');
+      })
+      .catch(function (err) {
+        document.body.classList.remove('capturing');
+        alert('캡처 중 오류가 발생했어요: ' + err);
+      });
+  });
+
+  /* ── HTML 저장 (수정 내용 그대로 직렬화) ── */
+  document.getElementById('btn-html').addEventListener('click', function () {
+    var html = '<!DOCTYPE html>\n' + document.documentElement.outerHTML;
+    var blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+    var a = document.createElement('a');
+    a.download = 'shape-ui-edited.html';
+    a.href = URL.createObjectURL(blob);
+    a.click();
+    setTimeout(function () { URL.revokeObjectURL(a.href); }, 1000);
+  });
+
+  /* ── 저장본 불러오기 ──
+     내려받아 둔 HTML에서 편집 내용(기기 영역 + 배경)만 가져와 지금 화면에 적용한다 */
+  var htmlPicker = document.getElementById('htmlpick');
+  document.getElementById('btn-load').addEventListener('click', function () {
+    htmlPicker.value = '';
+    htmlPicker.click();
+  });
+
+  htmlPicker.addEventListener('change', function () {
+    var file = htmlPicker.files && htmlPicker.files[0];
+    if (!file) return;
+    var fr = new FileReader();
+    fr.onload = function () {
+      var doc;
+      try {
+        doc = new DOMParser().parseFromString(String(fr.result), 'text/html');
+      } catch (err) {
+        alert('파일을 읽지 못했어요: ' + err);
+        return;
+      }
+      var newDevice = doc.querySelector('.device');
+      if (!newDevice) {
+        alert('이 파일에서는 편집 내용을 찾지 못했어요.\n이 편집기에서 "HTML로 저장"으로 받은 파일인지 확인해주세요.');
+        return;
+      }
+
+      /* 배경: 노드는 그대로 두고 값만 옮겨 담는다 */
+      var newBg = doc.getElementById('bg');
+      bg.style.cssText = newBg ? newBg.style.cssText : '';
+      if (newBg && newBg.dataset.orig) bg.dataset.orig = newBg.dataset.orig;
+      else delete bg.dataset.orig;
+      blurPanel.hidden = !bg.dataset.orig;
+      gradPanel.hidden = true;
+
+      /* 기기 영역 통째로 교체 후 기능 재연결 */
+      var stage = document.getElementById('capture');
+      stage.replaceChild(document.importNode(newDevice, true), stage.querySelector('.device'));
+      initStage();
+    };
+    fr.readAsText(file);
+  });
+
+  initStage();
+})();
+</script>
+</body>
+</html>
